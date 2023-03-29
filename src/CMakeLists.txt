@@ -48,6 +48,7 @@ set(SOURCES
     types/qwkeyboard.cpp
     types/qwpointer.cpp
     types/qwtablet.cpp
+    types/qwtabletpad.cpp
     types/qwoutput.cpp
     util/qwsignalconnector.cpp
     interfaces/qwbackendinterface.cpp
@@ -75,6 +76,7 @@ set(HEADERS
     types/qwkeyboard.h
     types/qwpointer.h
     types/qwtablet.h
+    types/qwtabletpad.h
     types/qwoutput.h
     util/qwsignalconnector.h
     interfaces/qwinterface.h

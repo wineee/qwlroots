@@ -6,6 +6,7 @@
 #include "qwkeyboard.h"
 #include "qwpointer.h"
 #include "qwtablet.h"
+#include "qwtabletpad.h""
 
 extern "C" {
 #include <wlr/types/wlr_input_device.h>
@@ -75,6 +76,8 @@ QWInputDevice *QWInputDevice::from(wlr_input_device *handle)
         return QWPointer::fromInputDevice(handle);
     case WLR_INPUT_DEVICE_TABLET_TOOL:
         return QWTablet::fromInputDevice(handle);
+    case WLR_INPUT_DEVICE_TABLET_PAD:
+        return QWTabletPad::fromInputDevice(handle);
     default:
         break;
     }
