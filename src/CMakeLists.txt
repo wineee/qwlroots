@@ -31,6 +31,7 @@ message("wlroots version=${WLROOTS_VERSION}, major=${WLROOTS_VERSION_MAJOR}, min
 
 pkg_search_module(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
 ws_generate(server wayland-protocols stable/xdg-shell/xdg-shell.xml xdg-shell-protocol)
+ws_generate(server wayland-protocols unstable/fullscreen-shell/fullscreen-shell-unstable-v1.xml fullscreen-shell-unstable-v1-protocol)
 
 set(SOURCES
     qwglobal.cpp
@@ -68,6 +69,7 @@ set(SOURCES
     types/qwpresentation.cpp
     types/qwxwaylandserver.cpp
     types/qwviewporter.cpp
+    types/qwfullscreenshellv1.cpp
     util/qwsignalconnector.cpp
     interfaces/qwbackendinterface.cpp
     interfaces/qwoutputinterface.cpp
@@ -115,6 +117,7 @@ set(HEADERS
     types/qwpresentation.h
     types/qwxwaylandserver.h
     types/qwviewporter.h
+    types/qwfullscreenshellv1.h
     util/qwsignalconnector.h
     interfaces/qwinterface.h
     interfaces/qwbackendinterface.h
