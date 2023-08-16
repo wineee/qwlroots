@@ -9,7 +9,7 @@
 struct wlr_xdg_decoration_manager_v1;
 struct wlr_xdg_toplevel_decoration_v1;
 
-typedef int wlr_xdg_toplevel_decoration_v1_mode_t;
+typedef uint32_t wlr_xdg_toplevel_decoration_v1_mode_t;
 
 QW_BEGIN_NAMESPACE
 
@@ -34,6 +34,7 @@ Q_SIGNALS:
 
 private:
     QWXdgDecorationManagerV1(wlr_xdg_decoration_manager_v1 *handle, bool isOwner);
+    ~QWXdgDecorationManagerV1() = default;
 };
 
 class QWXdgToplevelDecorationV1Private;
@@ -56,6 +57,7 @@ Q_SIGNALS:
 
 private:
     QWXdgToplevelDecorationV1(wlr_xdg_toplevel_decoration_v1 *handle, bool isOwner);
+    ~QWXdgToplevelDecorationV1() = default;
 };
 
 QW_END_NAMESPACE

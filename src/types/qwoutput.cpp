@@ -11,8 +11,14 @@
 #include <QSize>
 
 extern "C" {
+#include <math.h>
+#define static
 #include <wlr/types/wlr_output.h>
+#undef static
 }
+
+static_assert(std::is_same_v<wl_output_transform_t, std::underlying_type_t<wl_output_transform>>);
+static_assert(std::is_same_v<wl_output_subpixel_t, std::underlying_type_t<wl_output_subpixel>>);
 
 QW_BEGIN_NAMESPACE
 
@@ -32,6 +38,9 @@ public:
         sc.connect(&handle->events.present, this, &QWOutputPrivate::on_present);
         sc.connect(&handle->events.bind, this, &QWOutputPrivate::on_bind);
         sc.connect(&handle->events.description, this, &QWOutputPrivate::on_description);
+#if WLR_VERSION_MINOR > 16
+        sc.connect(&handle->events.request_state, this, &QWOutputPrivate::on_request_state);
+#endif
         sc.connect(&handle->events.destroy, this, &QWOutputPrivate::on_destroy);
     }
     ~QWOutputPrivate() {
@@ -58,6 +67,9 @@ public:
     void on_present(void *data);
     void on_bind(void *data);
     void on_description(void *data);
+#if WLR_VERSION_MINOR > 16
+    void on_request_state(void *data);
+#endif
     void on_destroy(void *data);
 
     static QHash<void*, QWOutput*> map;
@@ -66,9 +78,8 @@ public:
 };
 QHash<void*, QWOutput*> QWOutputPrivate::map;
 
-void QWOutputPrivate::on_frame(void *data)
+void QWOutputPrivate::on_frame(void *)
 {
-    Q_ASSERT(m_handle == data);
     Q_EMIT q_func()->frame();
 }
 
@@ -77,38 +88,42 @@ void QWOutputPrivate::on_damage(void *data)
     Q_EMIT q_func()->damage(reinterpret_cast<wlr_output_event_damage*>(data));
 }
 
-void QWOutputPrivate::on_needs_frame(void *data)
+void QWOutputPrivate::on_needs_frame(void *)
 {
-    Q_ASSERT(m_handle == data);
     Q_EMIT q_func()->needsFrame();
 }
 
 void QWOutputPrivate::on_precommit(void *data)
 {
-    Q_EMIT q_func()->precommit(reinterpret_cast<wlr_output_event_precommit*>(data));
+    Q_EMIT q_func()->precommit(static_cast<wlr_output_event_precommit*>(data));
 }
 
 void QWOutputPrivate::on_commit(void *data)
 {
-    Q_EMIT q_func()->commit(reinterpret_cast<wlr_output_event_commit*>(data));
+    Q_EMIT q_func()->commit(static_cast<wlr_output_event_commit*>(data));
 }
 
 void QWOutputPrivate::on_present(void *data)
 {
-    Q_EMIT q_func()->present(reinterpret_cast<wlr_output_event_present*>(data));
+    Q_EMIT q_func()->present(static_cast<wlr_output_event_present*>(data));
 }
 
 void QWOutputPrivate::on_bind(void *data)
 {
-    Q_EMIT q_func()->bind(reinterpret_cast<wlr_output_event_bind*>(data));
+    Q_EMIT q_func()->bind(static_cast<wlr_output_event_bind*>(data));
 }
 
-void QWOutputPrivate::on_description(void *data)
+void QWOutputPrivate::on_description(void *)
 {
-    Q_ASSERT(m_handle == data);
     Q_EMIT q_func()->descriptionChanged();
 }
 
+#if WLR_VERSION_MINOR > 16
+void QWOutputPrivate::on_request_state(void *data)
+{
+    Q_EMIT q_func()->requestState(static_cast<wlr_output_event_request_state*>(data));
+}
+#endif
 void QWOutputPrivate::on_destroy(void *)
 {
     destroy();
@@ -312,9 +327,21 @@ const wlr_drm_format_set *QWOutput::getPrimaryFormats(uint32_t bufferCaps)
     return wlr_output_get_primary_formats(handle(), bufferCaps);
 }
 
-void QWOutputCursor::destroy()
+#if WLR_VERSION_MINOR > 16
+void QWOutput::addSoftwareCursorsToRenderPass(wlr_render_pass *render_pass, const pixman_region32_t *damage)
 {
-    wlr_output_cursor_destroy(handle());
+    wlr_output_add_software_cursors_to_render_pass(handle(), render_pass, damage);
+}
+
+bool QWOutput::configurePrimarySwapchain(const wlr_output_state *state, wlr_swapchain **swapchain)
+{
+    return wlr_output_configure_primary_swapchain(handle(), state, swapchain);
+}
+#endif
+
+void QWOutputCursor::operator delete(QWOutputCursor *p, std::destroying_delete_t)
+{
+    wlr_output_cursor_destroy(p->handle());
 }
 
 wlr_output_cursor *QWOutputCursor::handle() const
@@ -333,12 +360,14 @@ QWOutputCursor *QWOutputCursor::create(QWOutput *output)
     return from(handle);
 }
 
+#if WLR_VERSION_MINOR <= 16
 bool QWOutputCursor::setImage(const QImage &image, const QPoint &hotspot)
 {
     return wlr_output_cursor_set_image(handle(), reinterpret_cast<const uint8_t*>(image.constBits()),
                                        image.bitPlaneCount(), image.width(), image.height(),
                                        hotspot.x(), hotspot.y());
 }
+#endif
 
 bool QWOutputCursor::setBuffer(QWBuffer *buffer, const QPoint &hotspot)
 {

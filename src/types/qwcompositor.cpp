@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qwcompositor.h"
+#include "qwsubcompositor.h"
 #include "qwdisplay.h"
 #include "qwtexture.h"
 #include "qwoutput.h"
@@ -13,8 +14,13 @@
 #include <QPointF>
 
 extern "C" {
+#include <math.h>
+#define static
 #include <wlr/types/wlr_compositor.h>
+#undef static
 }
+
+static_assert(std::is_same_v<wl_output_transform_t, std::underlying_type_t<wl_output_transform>>);
 
 QW_BEGIN_NAMESPACE
 
@@ -113,6 +119,8 @@ public:
         sc.connect(&handle->events.new_subsurface, this, &QWSurfacePrivate::on_new_subsurface);
 #if WLR_VERSION_MINOR > 16
         sc.connect(&handle->events.precommit, this, &QWSurfacePrivate::on_precommit);
+        sc.connect(&handle->events.map, this, &QWSurfacePrivate::on_map);
+        sc.connect(&handle->events.unmap, this, &QWSurfacePrivate::on_unmap);
 #endif
     }
     ~QWSurfacePrivate() {
@@ -135,6 +143,8 @@ public:
     void on_new_subsurface(void *);
 #if WLR_VERSION_MINOR > 16
     void on_precommit(void *);
+    void on_map(void *);
+    void on_unmap(void *);
 #endif
     static QHash<void*, QWSurface*> map;
     QW_DECLARE_PUBLIC(QWSurface)
@@ -149,22 +159,21 @@ void QWSurfacePrivate::on_destroy(void *)
     delete q_func();
 }
 
-void QWSurfacePrivate::on_client_commit(void *data)
+void QWSurfacePrivate::on_client_commit(void *)
 {
-    Q_ASSERT(m_handle == data);
-    Q_EMIT q_func()->client_commit();
+    Q_EMIT q_func()->clientCommit();
 }
 
-void QWSurfacePrivate::on_commit(void *data)
+void QWSurfacePrivate::on_commit(void *)
 {
-    Q_ASSERT(m_handle == data);
     Q_EMIT q_func()->commit();
 }
 
 void QWSurfacePrivate::on_new_subsurface(void *data)
 {
-    Q_ASSERT(m_handle == data);
-    Q_EMIT q_func()->new_subsurface();
+    auto handle = reinterpret_cast<wlr_subsurface*>(data);
+    Q_ASSERT(handle);
+    Q_EMIT q_func()->newSubsurface(QWSubsurface::from(handle));
 }
 
 #if WLR_VERSION_MINOR > 16
@@ -172,6 +181,16 @@ void QWSurfacePrivate::on_new_subsurface(void *data)
 void QWSurfacePrivate::on_precommit(void *data)
 {
     Q_EMIT q_func()->precommit(reinterpret_cast<wlr_surface_state*>(data));
+}
+
+void QWSurfacePrivate::on_map(void *)
+{
+    Q_EMIT q_func()->mapped();
+}
+
+void QWSurfacePrivate::on_unmap(void *)
+{
+    Q_EMIT q_func()->unmapped();
 }
 
 #endif
@@ -301,12 +320,22 @@ void QWSurface::setPreferredBufferScale(int32_t scale)
 
 void QWSurface::setPreferredBufferTransform(wl_output_transform_t transform)
 {
-   wlr_surface_set_preferred_buffer_transform(handle(), static_cast<wl_output_transform>(transform));
+    wlr_surface_set_preferred_buffer_transform(handle(), static_cast<wl_output_transform>(transform));
 }
 
-void QWSurface::setRole(const wlr_surface_role *role, void *roleData, wl_resource *errorResource, uint32_t errorCode)
+void QWSurface::setRole(const wlr_surface_role *role, wl_resource *errorResource, uint32_t errorCode)
 {
-   wlr_surface_set_role(handle(), role, roleData, errorResource, errorCode);
+    wlr_surface_set_role(handle(), role, errorResource, errorCode);
+}
+
+void QWSurface::map()
+{
+    wlr_surface_map(handle());
+}
+
+void QWSurface::unmap()
+{
+    wlr_surface_unmap(handle());
 }
 #endif
 

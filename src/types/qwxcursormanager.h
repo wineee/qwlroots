@@ -14,7 +14,11 @@ class QWCursor;
 class QW_EXPORT QWXCursorManager
 {
 public:
-    void destroy();
+    QWXCursorManager() = delete;
+    ~QWXCursorManager() = delete;
+
+    void operator delete(QWXCursorManager *p, std::destroying_delete_t);
+
     wlr_xcursor_manager *handle() const;
 
     static QWXCursorManager *from(wlr_xcursor_manager *handle);
@@ -22,11 +26,9 @@ public:
 
     bool load(float scale);
     wlr_xcursor *getXCursor(const char *name, float scale) const;
+#if WLR_VERSION_MINOR <= 16
     void setCursor(const char *name, QWCursor *cursor);
-
-private:
-    QWXCursorManager() = default;
-    ~QWXCursorManager() = default;
+#endif
 };
 
 QW_END_NAMESPACE

@@ -8,8 +8,13 @@
 #include <QHash>
 
 extern "C" {
+#include <math.h>
+#define static
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#undef static
 }
+
+static_assert(std::is_same_v<wlr_xdg_toplevel_decoration_v1_mode_t, std::underlying_type_t<wlr_xdg_toplevel_decoration_v1_mode>>);
 
 QW_BEGIN_NAMESPACE
 
@@ -130,9 +135,8 @@ void QWXdgToplevelDecorationV1Private::on_destroy(void *)
     delete q_func();
 }
 
-void QWXdgToplevelDecorationV1Private::on_request_mode(void *data)
+void QWXdgToplevelDecorationV1Private::on_request_mode(void *)
 {
-    Q_ASSERT(m_handle == data);
     Q_EMIT q_func()->requestMode();
 }
 

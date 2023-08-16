@@ -18,16 +18,18 @@ struct wlr_buffer;
 struct wlr_fbox;
 struct wlr_output;
 struct wlr_xdg_surface;
+struct wlr_scene_output_state_options;
+struct wlr_scene_output_sample_event;
+struct wlr_scene_layer_surface_v1;
+struct wlr_box;
 
 struct pixman_region32;
 
-typedef int wl_output_transform_t;
+typedef uint32_t wl_output_transform_t;
 
-typedef bool (*wlr_scene_buffer_point_accepts_input_func_t)(
-    struct wlr_scene_buffer *buffer, int sx, int sy);
+using wlr_scene_buffer_point_accepts_input_func_t = bool (*)(wlr_scene_buffer *buffer, int sx, int sy);
 
-typedef void (*wlr_scene_buffer_iterator_func_t)(
-    struct wlr_scene_buffer *buffer, int sx, int sy, void *user_data);
+using wlr_scene_buffer_iterator_func_t = void (*)(wlr_scene_buffer *buffer, int sx, int sy, void *user_data);
 
 QT_BEGIN_NAMESPACE
 class QPoint;
@@ -46,6 +48,8 @@ class QW_EXPORT QWSceneNode : public QObject, public QWObject
     Q_OBJECT
     QW_DECLARE_PRIVATE(QWSceneNode)
 public:
+    virtual ~QWSceneNode() override = default;
+
     inline wlr_scene_node *handle() const {
         return QWObject::handle<wlr_scene_node>();
     }
@@ -76,6 +80,7 @@ class QW_EXPORT QWSceneTree : public QWSceneNode
 {
     Q_OBJECT
 public:
+    ~QWSceneTree() override = default;
     explicit QWSceneTree(QWSceneTree *parent);
 
     wlr_scene_tree *handle() const;
@@ -97,6 +102,7 @@ class QW_EXPORT QWScene : public QWSceneTree
 {
     Q_OBJECT
 public:
+    ~QWScene() override = default;
     explicit QWScene(QObject *parent = nullptr);
 
     wlr_scene *handle() const;
@@ -118,6 +124,7 @@ class QW_EXPORT QWSceneBuffer : public QWSceneNode
     Q_OBJECT
     QW_DECLARE_PRIVATE(QWSceneBuffer)
 public:
+    ~QWSceneBuffer() override = default;
     explicit QWSceneBuffer(QWBuffer *buffer, QWSceneTree *parent);
 
     wlr_scene_buffer *handle() const;
@@ -137,7 +144,11 @@ public:
 Q_SIGNALS:
     void outputEnter(wlr_scene_output *output);
     void outputLeave(wlr_scene_output *output);
+#if WLR_VERSION_MINOR > 16
+    void outputSample(wlr_scene_output_sample_event *output);
+#else
     void outputPresent(wlr_scene_output *output);
+#endif
     void frameDone(timespec *now);
 
 private:
@@ -148,6 +159,7 @@ class QW_EXPORT QWSceneRect : public QWSceneNode
 {
     Q_OBJECT
 public:
+    ~QWSceneRect() override = default;
     explicit QWSceneRect(const QSize &size, const QColor &color, QWSceneTree *parent);
 
     inline wlr_scene_rect *handle() const {
@@ -172,6 +184,7 @@ class QW_EXPORT QWSceneOutput : public QObject, public QWObject
     Q_OBJECT
     QW_DECLARE_PRIVATE(QWSceneOutput)
 public:
+    ~QWSceneOutput() override = default;
     explicit QWSceneOutput(QWScene *scene, QWOutput *output);
 
     inline wlr_scene_output *handle() const {
@@ -181,8 +194,11 @@ public:
     static QWSceneOutput *get(wlr_scene_output *handle);
     static QWSceneOutput *from(wlr_scene_output *handle);
     static QWSceneOutput *from(QWScene *scene, QWOutput *output);
-
+#if WLR_VERSION_MINOR > 16
+    void commit(const wlr_scene_output_state_options *options);
+#else
     void commit();
+#endif
     void sendFrameDone(timespec *now);
 
     void forEachBuffer(wlr_scene_buffer_iterator_func_t iterator, void *user_data) const;
@@ -192,7 +208,21 @@ Q_SIGNALS:
 
 private:
     QWSceneOutput(wlr_scene_output *handle, bool isOwner);
-    ~QWSceneOutput() = default;
+};
+
+class QWLayerSurfaceV1;
+class QW_EXPORT QWSceneLayerSurfaceV1
+{
+public:
+    QWSceneLayerSurfaceV1() = delete;
+    ~QWSceneLayerSurfaceV1() = delete;
+
+    wlr_scene_layer_surface_v1 *handle() const;
+
+    static QWSceneLayerSurfaceV1 *from(wlr_scene_layer_surface_v1 *handle);
+    static QWSceneLayerSurfaceV1 *create(QWSceneTree *parent, QWLayerSurfaceV1 *layerSurface);
+
+    void configure(const wlr_box *fullArea, struct wlr_box *usableArea);
 };
 
 QW_END_NAMESPACE

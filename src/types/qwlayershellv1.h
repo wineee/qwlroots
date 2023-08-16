@@ -10,15 +10,16 @@
 struct wlr_layer_surface_v1;
 struct wlr_layer_shell_v1;
 struct wl_resource;
+struct wlr_surface;
 
-typedef void (*wlr_surface_iterator_func_t)(struct wlr_surface *surface,
-    int sx, int sy, void *data);
+using wlr_surface_iterator_func_t = void (*)(wlr_surface *surface, int sx, int sy, void *data);
 
 QW_BEGIN_NAMESPACE
 
 class QWDisplay;
 class QWSurface;
 class QWLayerShellV1Private;
+class QWXdgPopup;
 class QW_EXPORT QWLayerShellV1 : public QObject, public QWObject
 {
     Q_OBJECT
@@ -67,12 +68,11 @@ public:
     QWSurface *popupSurfaceAt(const QPointF &xpos, QPointF *subPos = nullptr) const;
     QRect getGeometry() const;
     void forEachPopupSurface(wlr_surface_iterator_func_t iterator, void *userData) const;
+    QWSurface *surface() const;
 
 Q_SIGNALS:
     void beforeDestroy(QWLayerSurfaceV1 *self);
-    void map();
-    void unmap();
-    void newPopup();
+    void newPopup(QWXdgPopup *popup);
 
 private:
     QWLayerSurfaceV1(wlr_layer_surface_v1 *handle, bool isOwner);

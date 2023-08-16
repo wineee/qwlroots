@@ -51,12 +51,26 @@ class QW_EXPORT QWObject
 public:
     template<typename Handle>
     inline Handle *handle() const {
+        if (!isValid()) {
+            return nullptr;
+        }
         return reinterpret_cast<Handle*>(qw_d_ptr->m_handle);
     }
 
     virtual ~QWObject();
     inline bool isValid() const {
-        return qw_d_ptr->m_handle;
+        // NOTE(lxz): Some functions of wlroots allow null pointer parameters. In order to reduce repeated verification code fragments, If this ptr is nullptr, return nullptr.
+        // WARNING(lxz): Check this in the member function, it is UB. Under some compilers it is necessary to use `volatile` to prevent compiler optimizations.
+        //               In the derived class, if the object address is nullptr, the address of this is not necessarily 0x0, it may be 0x01. The correct memory address starting position will not be lower than 0x1000, so it is considered that addresses lower than 0x1000 are nullptr.
+        volatile auto thisPtr = reinterpret_cast<qintptr>(this);
+        return thisPtr > 0x1000 && qw_d_ptr->m_handle;
+    }
+
+    void setData(void* owner, void* data);
+
+    template<typename T>
+    T* getData() const {
+        return reinterpret_cast<T*>(m_data.second);
     }
 
 protected:
@@ -65,6 +79,9 @@ protected:
 
     Q_DISABLE_COPY(QWObject)
     QW_DECLARE_PRIVATE(QWObject)
+
+private:
+    std::pair<void*, void*> m_data; // <owner, data>
 };
 
 QW_END_NAMESPACE

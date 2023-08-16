@@ -15,11 +15,9 @@ struct wlr_xdg_toplevel_resize_event;
 struct wlr_xdg_toplevel_show_window_menu_event;
 struct wlr_xdg_surface_configure;
 struct wlr_surface;
-struct wl_display;
 struct wl_resource;
 
-typedef void (*wlr_surface_iterator_func_t)(struct wlr_surface *surface,
-    int sx, int sy, void *data);
+using wlr_surface_iterator_func_t = void (*)(wlr_surface *surface, int sx, int sy, void *data);
 
 QW_BEGIN_NAMESPACE
 
@@ -67,6 +65,7 @@ public:
 
     QWXdgPopup *toPopup() const;
     QWXdgToplevel *topToplevel() const;
+    QWSurface *surface() const;
 
     void ping();
     uint32_t scheduleConfigure();
@@ -81,8 +80,6 @@ Q_SIGNALS:
     void beforeDestroy(QWXdgSurface *self);
     void pingTimeout();
     void newPopup(QWXdgPopup *popup);
-    void map();
-    void unmap();
     void configure(wlr_xdg_surface_configure *conf);
     void ackConfigure(wlr_xdg_surface_configure *conf);
 
@@ -98,6 +95,8 @@ class QW_EXPORT QWXdgPopup : public QWXdgSurface
     Q_OBJECT
     QW_DECLARE_PRIVATE(QWXdgPopup)
 public:
+    ~QWXdgPopup() = default;
+
     wlr_xdg_popup *handle() const;
 
     static QWXdgPopup *get(wlr_xdg_popup *handle);
@@ -114,7 +113,6 @@ Q_SIGNALS:
 
 private:
     QWXdgPopup(wlr_xdg_popup *handle, bool isOwner);
-    ~QWXdgPopup() = default;
 };
 
 class QWXdgToplevelPrivate;
@@ -139,7 +137,7 @@ public:
     uint32_t setWmCapabilities(uint32_t caps);
 
     void sendClose();
-    bool setParsent(QWXdgToplevel *parent);
+    bool setParent(QWXdgToplevel *parent);
 
 Q_SIGNALS:
     void requestMaximize(bool maximize);

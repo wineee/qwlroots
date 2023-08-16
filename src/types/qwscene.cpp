@@ -5,6 +5,7 @@
 #include "qwoutputlayout.h"
 #include "qwbuffer.h"
 #include "qwxdgshell.h"
+#include "qwlayershellv1.h"
 #include "qwoutput.h"
 #include "qwcompositor.h"
 #include "util/qwsignalconnector.h"
@@ -16,12 +17,14 @@
 
 extern "C" {
 // avoid replace static
-#include <wayland-server-core.h>
+#include <math.h>
 #define static
 #include <wlr/types/wlr_scene.h>
 #undef static
 #include <wlr/util/box.h>
 }
+
+static_assert(std::is_same_v<wl_output_transform_t, std::underlying_type_t<wl_output_transform>>);
 
 QW_BEGIN_NAMESPACE
 
@@ -255,13 +258,21 @@ public:
     {
         sc.connect(&handle->events.output_enter, this, &QWSceneBufferPrivate::on_output_enter);
         sc.connect(&handle->events.output_leave, this, &QWSceneBufferPrivate::on_output_leave);
+#if WLR_VERSION_MINOR > 16
+        sc.connect(&handle->events.output_sample, this, &QWSceneBufferPrivate::on_output_sample);
+#else
         sc.connect(&handle->events.output_present, this, &QWSceneBufferPrivate::on_output_present);
+#endif
         sc.connect(&handle->events.frame_done, this, &QWSceneBufferPrivate::on_frame_done);
     }
 
     void on_output_enter(void *data);
     void on_output_leave(void *data);
+#if WLR_VERSION_MINOR > 16
+    void on_output_sample(void *data);
+#else
     void on_output_present(void *data);
+#endif
     void on_frame_done(void *data);
 
     QW_DECLARE_PUBLIC(QWSceneBuffer)
@@ -277,10 +288,17 @@ void QWSceneBufferPrivate::on_output_leave(void *data)
     Q_EMIT q_func()->outputLeave(reinterpret_cast<wlr_scene_output*>(data));
 }
 
+#if WLR_VERSION_MINOR > 16
+void QWSceneBufferPrivate::on_output_sample(void *data)
+{
+    Q_EMIT q_func()->outputSample(reinterpret_cast<wlr_scene_output_sample_event*>(data));
+}
+#else
 void QWSceneBufferPrivate::on_output_present(void *data)
 {
     Q_EMIT q_func()->outputPresent(reinterpret_cast<wlr_scene_output*>(data));
 }
+#endif
 
 void QWSceneBufferPrivate::on_frame_done(void *data)
 {
@@ -504,10 +522,17 @@ QWSceneOutput *QWSceneOutput::from(QWScene *scene, QWOutput *output)
     return from(handle);
 }
 
+#if WLR_VERSION_MINOR > 16
+void QWSceneOutput::commit(const wlr_scene_output_state_options *options)
+{
+    wlr_scene_output_commit(handle(), options);
+}
+#else
 void QWSceneOutput::commit()
 {
     wlr_scene_output_commit(handle());
 }
+#endif
 
 void QWSceneOutput::sendFrameDone(timespec *now)
 {
@@ -517,6 +542,27 @@ void QWSceneOutput::sendFrameDone(timespec *now)
 void QWSceneOutput::forEachBuffer(wlr_scene_buffer_iterator_func_t iterator, void *userData) const
 {
     wlr_scene_output_for_each_buffer(handle(), iterator, userData);
+}
+
+wlr_scene_layer_surface_v1 *QWSceneLayerSurfaceV1::handle() const
+{
+    return reinterpret_cast<wlr_scene_layer_surface_v1*>(const_cast<QWSceneLayerSurfaceV1*>(this));
+}
+
+QWSceneLayerSurfaceV1 *QWSceneLayerSurfaceV1::from(wlr_scene_layer_surface_v1 *handle)
+{
+    return reinterpret_cast<QWSceneLayerSurfaceV1*>(handle);
+}
+
+QWSceneLayerSurfaceV1 *QWSceneLayerSurfaceV1 ::create(QWSceneTree *parent, QWLayerSurfaceV1 *layerSurface)
+{
+    auto *handle = wlr_scene_layer_surface_v1_create(parent->handle(), layerSurface->handle());
+    return from(handle);
+}
+
+void QWSceneLayerSurfaceV1::configure(const wlr_box *fullArea, wlr_box *usableArea)
+{
+    wlr_scene_layer_surface_v1_configure(handle(), fullArea, usableArea);
 }
 
 QW_END_NAMESPACE

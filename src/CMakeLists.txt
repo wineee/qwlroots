@@ -31,6 +31,9 @@ message("wlroots version=${WLROOTS_VERSION}, major=${WLROOTS_VERSION_MAJOR}, min
 
 pkg_search_module(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
 ws_generate(server wayland-protocols stable/xdg-shell/xdg-shell.xml xdg-shell-protocol)
+ws_generate(server wayland-protocols unstable/fullscreen-shell/fullscreen-shell-unstable-v1.xml fullscreen-shell-unstable-v1-protocol)
+ws_generate(server wayland-protocols unstable/tablet/tablet-unstable-v2.xml tablet-unstable-v2-protocol)
+ws_generate(server wayland-protocols unstable/pointer-constraints/pointer-constraints-unstable-v1.xml pointer-constraints-unstable-v1-protocol)
 
 set(SOURCES
     qwglobal.cpp
@@ -39,25 +42,87 @@ set(SOURCES
     render/qwrenderer.cpp
     render/qwtexture.cpp
     render/qwallocator.cpp
+    render/qwegl.cpp
     types/qwbuffer.cpp
+    types/qwclientbuffer.cpp
     types/qwcompositor.cpp
+    types/qwexportdmabufmanagerv1.cpp
     types/qwsubcompositor.cpp
     types/qwdatadevice.cpp
+    types/qwdatasource.cpp
+    types/qwdatadevicev1.cpp
+    types/qwdatacontrolmanagerv1.cpp
     types/qwdamagering.cpp
+    types/qwdrm.cpp
+    types/qwdrmleasev1.cpp
+    types/qwdrmleasev1manager.cpp
+    types/qwdrmleaserequestv1.cpp
     types/qwoutputlayout.cpp
     types/qwscene.cpp
     types/qwseat.cpp
+    types/qwprimaryselection.cpp
+    types/qwswitch.cpp
     types/qwxdgshell.cpp
     types/qwcursor.cpp
     types/qwxcursormanager.cpp
     types/qwinputdevice.cpp
+    types/qwtouch.cpp
     types/qwkeyboard.cpp
     types/qwpointer.cpp
     types/qwtablet.cpp
+    types/qwtablettool.cpp
     types/qwtabletpad.cpp
     types/qwoutput.cpp
     types/qwxdgdecorationmanagerv1.cpp
     types/qwidle.cpp
+    types/qwidleinhibitv1.cpp
+    types/qwinputinhibitmanager.cpp
+    types/qwkeyboardgroup.cpp
+    types/qwpresentation.cpp
+    types/qwviewporter.cpp
+    types/qwxdgforeignregistry.cpp
+    types/qwxdgoutputv1.cpp
+    types/qwxdgactivationv1.cpp
+    types/qwxdgactivationtokenv1.cpp
+    types/qwtextinputv3.cpp
+    types/qwtextinputmanagerv3.cpp
+    types/qwtabletmanagerv2.cpp
+    types/qwsinglepixelbufferv1.cpp
+    types/qwsessionlockv1.cpp
+    types/qwsessionlockmanagerv1.cpp
+    types/qwsessionlocksurfacev1.cpp
+    types/qwscreencopyv1.cpp
+    types/qwrelativepointerv1.cpp
+    types/qwrelativepointermanagerv1.cpp
+    types/qwprimaryselectionv1.cpp
+    types/qwpointergesturesv1.cpp
+    types/qwpointerconstraintv1.cpp
+    types/qwpointerconstraintsv1.cpp
+    types/qwoutputmanagerv1.cpp
+    types/qwoutputconfigurationv1.cpp
+    types/qwoutputconfigurationheadv1.cpp
+    types/qwlinuxdmabufv1.cpp
+    types/qwlinuxdmabuffeedbackv1.cpp
+    types/qwinputmethodv2.cpp
+    types/qwinputmethodkeyboardgrabv2.cpp
+    types/qwinputpopupsurfacev2.cpp
+    types/qwinputmethodmanagerv2.cpp
+    types/qwidlenotifyv1.cpp
+    types/qwforeigntoplevelhandlev1.cpp
+    types/qwforeigntoplevelmanagerv1.cpp
+    types/qwxdgforeignv1.cpp
+    types/qwxdgforeignv2.cpp
+    types/qwvirtualkeyboardv1.cpp
+    types/qwvirtualpointerv1.cpp
+    types/qwgammacontorlv1.cpp
+    types/qwfullscreenshellv1.cpp
+    types/qwtabletv2.cpp
+    types/qwtabletv2tablet.cpp
+    types/qwtabletv2tabletool.cpp
+    types/qwtabletv2tablepad.cpp
+    types/qwtabletmanagerv2.cpp
+    types/qwkeyboardshortcutsinhibitv1.cpp
+    types/qwkeyboardshortcutsinhibitmanagerv1.cpp
     util/qwsignalconnector.cpp
     interfaces/qwbackendinterface.cpp
     interfaces/qwoutputinterface.cpp
@@ -65,6 +130,8 @@ set(SOURCES
     interfaces/qwbufferinterface.cpp
     interfaces/qwrendererinterface.cpp
     interfaces/qwswitchinterface.cpp
+    interfaces/qwpointerinterface.cpp
+    interfaces/qwtabletpadinterface.cpp
 )
 
 set(HEADERS
@@ -74,18 +141,26 @@ set(HEADERS
     render/qwrenderer.h
     render/qwtexture.h
     render/qwallocator.h
+    render/qwegl.h
     types/qwbuffer.h
     types/qwcompositor.h
+    types/qwexportdmabufv1.h
     types/qwsubcompositor.h
     types/qwdatadevice.h
+    types/qwdatacontrolv1.h
     types/qwdamagering.h
+    types/qwdrm.h
+    types/qwdrmleasev1.h
     types/qwoutputlayout.h
     types/qwscene.h
     types/qwseat.h
+    types/qwprimaryselection.h
+    types/qwswitch.h
     types/qwxdgshell.h
     types/qwcursor.h
     types/qwxcursormanager.h
     types/qwinputdevice.h
+    types/qwtouch.h
     types/qwkeyboard.h
     types/qwpointer.h
     types/qwtablet.h
@@ -93,6 +168,36 @@ set(HEADERS
     types/qwoutput.h
     types/qwxdgdecorationmanagerv1.h
     types/qwidle.h
+    types/qwidleinhibitv1.h
+    types/qwinputinhibitmanager.h
+    types/qwkeyboardgroup.h
+    types/qwpresentation.h
+    types/qwxdgforeignregistry.h
+    types/qwxdgforeignregistry_p.h
+    types/qwxdgforeignv1.h
+    types/qwxdgforeignv2.h
+    types/qwviewporter.h
+    types/qwxdgoutputv1.h
+    types/qwxdgactivationv1.h
+    types/qwpointerconstraintsv1.h
+    types/qwtextinputv3.h
+    types/qwtabletv2.h
+    types/qwsinglepixelbufferv1.h
+    types/qwsessionlockv1.h
+    types/qwscreencopyv1.h
+    types/qwrelativepointerv1.h
+    types/qwprimaryselectionv1.h
+    types/qwpointergesturesv1.h
+    types/qwoutputmanagementv1.h
+    types/qwlinuxdmabufv1.h
+    types/qwinputmethodv2.h
+    types/qwidlenotifyv1.h
+    types/qwforeigntoplevelhandlev1.h
+    types/qwvirtualkeyboardv1.h
+    types/qwvirtualpointerv1.h
+    types/qwgammacontorlv1.h
+    types/qwfullscreenshellv1.h
+    types/qwkeyboardshortcutsinhibitv1.h
     util/qwsignalconnector.h
     interfaces/qwinterface.h
     interfaces/qwbackendinterface.h
@@ -102,20 +207,76 @@ set(HEADERS
     interfaces/qwkeyboardinterface.h
     ${CMAKE_CURRENT_BINARY_DIR}/generate/qwconfig.h
     interfaces/qwswitchinterface.h
+    interfaces/qwpointerinterface.h
+    interfaces/qwtabletpadinterface.h
 )
 
 set(PRIVATE_HEADERS
     types/qwinputdevice_p.h
 )
 
+if ((${WLROOTS_VERSION_MAJOR} EQUAL 0) AND (${WLROOTS_VERSION_MINOR} GREATER 16))
+    ws_generate(
+	server
+	wayland-protocols
+	staging/content-type/content-type-v1.xml
+	content-type-v1-protocol
+    )
+    ws_generate(
+	server
+	wayland-protocols
+	staging/cursor-shape/cursor-shape-v1.xml
+	cursor-shape-v1-protocol
+    )
+
+    list(APPEND SOURCES
+        render/qwswapchain.cpp
+        types/qwshm.cpp
+        types/qwfractionalscalev1.cpp
+        types/qwcontenttypev1.cpp
+        types/qwcursorshapev1.cpp
+    )
+    list(APPEND HEADERS
+        render/qwswapchain.h
+        types/qwshm.h
+        types/qwfractionalscalev1.cpp
+        types/qwcontenttypev1.h
+        types/qwcursorshapev1.h
+    )
+    if(WLR_HAVE_XWAYLAND)
+        list(APPEND SOURCES
+            types/qwxwaylandshellv1.cpp
+        )
+        list(APPEND HEADERS
+            types/qwxwaylandshellv1.h
+        )
+    endif()
+endif()
+
+if (WLR_HAVE_XWAYLAND)
+list(APPEND SOURCES
+    types/qwxwayland.cpp
+    types/qwxwaylandsurface.cpp
+    types/qwxwaylandserver.cpp
+)
+list(APPEND HEADERS
+    types/qwxwayland.h
+    types/qwxwaylandsurface.h
+    types/qwxwaylandserver.h
+)
+endif()
+
 pkg_search_module(WLR_PROTOCOLS wlr-protocols)
 if (WLR_PROTOCOLS_FOUND)
     ws_generate(server wlr-protocols unstable/wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-protocol)
+    ws_generate(server wlr-protocols unstable/wlr-output-power-management-unstable-v1.xml wlr-output-power-management-unstable-v1-protocol)
     set(PROTOCOL_HEADERS
         types/qwlayershellv1.h
+        types/qwoutputpowermanagementv1.h
     )
     set(PROTOCOL_SOURCES
         types/qwlayershellv1.cpp
+        types/qwoutputpowermanagementv1.cpp
     )
     list(APPEND HEADERS ${PROTOCOL_HEADERS})
     list(APPEND SOURCES ${PROTOCOL_SOURCES})

@@ -10,6 +10,8 @@
 struct wlr_renderer_impl;
 struct wlr_drm_format_set;
 struct wlr_render_pass;
+struct wlr_buffer_pass_options;
+struct wlr_render_timer;
 
 class QImage;
 class QPoint;
@@ -20,6 +22,7 @@ class QWBuffer;
 class QWRenderer;
 class QWRendererInterface : public QWInterface
 {
+    friend class QWRenderer;
 public:
     virtual ~QWRendererInterface();
 
@@ -49,7 +52,8 @@ public:
     virtual QWTexture *textureFromBuffer(QWBuffer *buffer) const;
 
 #if WLR_VERSION_MAJOR == 0 && WLR_VERSION_MINOR > 16
-    wlr_render_pass *beginBufferPass(QWBuffer *buffer);
+    wlr_render_pass *beginBufferPass(QWBuffer *buffer, const wlr_buffer_pass_options *options);
+    wlr_render_timer *renderTimerCreate();
 #endif
 
     virtual const QVector<uint32_t>* getShmTextureFormats() const;
@@ -83,7 +87,8 @@ protected:
                                 &T::textureFromBuffer
 #if WLR_VERSION_MAJOR == 0 && WLR_VERSION_MINOR > 16
                                 ,
-                                &T::beginBufferPass
+                                &T::beginBufferPass,
+                                &T::renderTimerCreate
 #endif
         ));
     }

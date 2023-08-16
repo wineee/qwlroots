@@ -2,17 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qwcursor.h"
+#include "qwbuffer.h"
 #include "qwinputdevice.h"
 #include "qwcompositor.h"
 #include "util/qwsignalconnector.h"
-#include "types/qwoutputlayout.h"
+#include "qwoutputlayout.h"
+#include "qwoutput.h"
+#include "qwxcursormanager.h"
 
 #include <QImage>
 #include <QPointF>
 #include <QHash>
 
 extern "C" {
+#include <math.h>
+#define static
 #include <wlr/types/wlr_cursor.h>
+#undef static
 #include <wlr/util/box.h>
 }
 
@@ -250,12 +256,30 @@ void QWCursor::move(QWInputDevice *dev, const QPointF &deltaPos)
     wlr_cursor_move(handle(), dev ? dev->handle() : nullptr, deltaPos.x(), deltaPos.y());
 }
 
+#if WLR_VERSION_MINOR > 16
+void QWCursor::setBuffer(QWBuffer *buffer, const QPoint &hotspot, float scale)
+{
+    wlr_cursor_set_buffer(handle(), buffer->handle(),
+                         hotspot.x(), hotspot.y(), scale);
+}
+
+void QWCursor::setXCursor(QWXCursorManager *manager, const char *name)
+{
+    wlr_cursor_set_xcursor(handle(), manager->handle(), name);
+}
+
+void QWCursor::unsetImage()
+{
+    wlr_cursor_unset_image(handle());
+}
+#else
 void QWCursor::setImage(const QImage &image, const QPoint &hotspot)
 {
     wlr_cursor_set_image(handle(), reinterpret_cast<const uint8_t*>(image.constBits()),
                          image.bytesPerLine(), image.width(), image.height(),
                          hotspot.x(), hotspot.y(), image.devicePixelRatioF());
 }
+#endif
 
 void QWCursor::setSurface(QWSurface *surface, const QPoint &hotspot)
 {
@@ -277,14 +301,14 @@ void QWCursor::attachOutputLayout(QWOutputLayout *layout)
     wlr_cursor_attach_output_layout(handle(), layout->handle());
 }
 
-void QWCursor::mapToOutput(wlr_output *output)
+void QWCursor::mapToOutput(QWOutput *output)
 {
-    wlr_cursor_map_to_output(handle(), output);
+    wlr_cursor_map_to_output(handle(), output ? output->handle() : nullptr);
 }
 
-void QWCursor::mapInputToOutput(QWInputDevice *dev, wlr_output *output)
+void QWCursor::mapInputToOutput(QWInputDevice *dev, QWOutput *output)
 {
-    wlr_cursor_map_input_to_output(handle(), dev->handle(), output);
+    wlr_cursor_map_input_to_output(handle(), dev->handle(), output ? output->handle() : nullptr);
 }
 
 void QWCursor::mapToRegion(const QRect &box)

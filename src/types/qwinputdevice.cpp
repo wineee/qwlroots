@@ -7,6 +7,8 @@
 #include "qwpointer.h"
 #include "qwtablet.h"
 #include "qwtabletpad.h"
+#include "qwswitch.h"
+#include "qwtouch.h"
 
 extern "C" {
 #include <wlr/types/wlr_input_device.h>
@@ -79,10 +81,14 @@ QWInputDevice *QWInputDevice::from(wlr_input_device *handle)
         return QWTablet::fromInputDevice(handle);
     case WLR_INPUT_DEVICE_TABLET_PAD:
         return QWTabletPad::fromInputDevice(handle);
+    case WLR_INPUT_DEVICE_SWITCH:
+        return QWSwitch::fromInputDevice(handle);
+    case WLR_INPUT_DEVICE_TOUCH:
+        return QWTouch::fromInputDevice(handle);
     default:
-        // TODO: After implementing other device types
-        // Here should not create QWInputDevice
-        return new QWInputDevice(handle, false);;
+        // Here is not reachable
+        qCritical("Unknow input device type!");
+        return nullptr;
     }
 }
 

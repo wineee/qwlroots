@@ -14,11 +14,9 @@ struct wl_resource;
 struct wlr_surface_role;
 struct pixman_region32;
 typedef pixman_region32 pixman_region32_t;
-typedef int wl_output_transform_t;
+typedef uint32_t wl_output_transform_t;
 
-typedef void (*wlr_surface_iterator_func_t)(
-    wlr_surface *surface, int sx, int sy, void *data
-);
+using wlr_surface_iterator_func_t = void (*)(wlr_surface *surface, int sx, int sy, void *data);
 
 QW_BEGIN_NAMESPACE
 
@@ -50,6 +48,7 @@ private:
     ~QWCompositor() = default;
 };
 
+class QWSubsurface;
 class QWSurfacePrivate;
 class QW_EXPORT QWSurface : public QObject, public QWObject
 {
@@ -83,14 +82,18 @@ public:
 #if WLR_VERSION_MINOR > 16
     void setPreferredBufferScale(int32_t scale);
     void setPreferredBufferTransform(wl_output_transform_t transform);
-    void setRole(const wlr_surface_role *role, void *roleData, wl_resource *errorResource, uint32_t errorCode);
+    void setRole(const wlr_surface_role *role, wl_resource *errorResource, uint32_t errorCode);
+    void map();
+    void unmap();
 #endif
 
 Q_SIGNALS:
     void beforeDestroy(QWSurface *self);
-    void client_commit();
+    void clientCommit();
     void commit();
-    void new_subsurface();
+    void newSubsurface(QWSubsurface *surface);
+    void mapped();
+    void unmapped();
 #if WLR_VERSION_MINOR > 16
     void precommit(const wlr_surface_state *state);
 #endif

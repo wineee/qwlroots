@@ -21,11 +21,15 @@ struct wlr_output_event_damage;
 struct wlr_output_event_bind;
 struct wlr_output_event_precommit;
 struct wlr_output_event_commit;
-
+struct wlr_output_event_request_state;
+struct wlr_output_state;
+struct wlr_swapchain;
+struct wlr_render_pass;
 struct pixman_region32;
+typedef pixman_region32 pixman_region32_t;
 
-typedef int wl_output_transform_t;
-typedef int wl_output_subpixel_t;
+typedef uint32_t wl_output_transform_t;
+typedef uint32_t wl_output_subpixel_t;
 
 QW_BEGIN_NAMESPACE
 
@@ -39,6 +43,8 @@ class QW_EXPORT QWOutput : public QObject, public QWObject
     Q_OBJECT
     QW_DECLARE_PRIVATE(QWOutput)
 public:
+    ~QWOutput() = default;
+
     inline wlr_output *handle() const {
         return QWObject::handle<wlr_output>();
     }
@@ -93,6 +99,12 @@ public:
     void renderSoftwareCursors(pixman_region32 *damage);
     const wlr_drm_format_set *getPrimaryFormats(uint32_t bufferCaps);
 
+#if WLR_VERSION_MINOR > 16
+    void addSoftwareCursorsToRenderPass(wlr_render_pass *render_pass, const pixman_region32_t *damage);
+    bool configurePrimarySwapchain(const wlr_output_state *state, wlr_swapchain **swapchain);
+#endif
+
+
 Q_SIGNALS:
     void beforeDestroy(QWOutput *self);
     void frame();
@@ -103,28 +115,31 @@ Q_SIGNALS:
     void present(wlr_output_event_present *event);
     void bind(wlr_output_event_bind *event);
     void descriptionChanged();
+#if WLR_VERSION_MINOR > 16
+    void requestState(wlr_output_event_request_state *state);
+#endif
 
 private:
     QWOutput(wlr_output *handle, bool isOwner);
-    ~QWOutput() = default;
 };
 
 class QW_EXPORT QWOutputCursor
 {
 public:
-    void destroy();
+    QWOutputCursor() = delete;
+    ~QWOutputCursor() = delete;
+
+    void operator delete(QWOutputCursor *p, std::destroying_delete_t);
     wlr_output_cursor *handle() const;
 
     static QWOutputCursor *from(wlr_output_cursor *handle);
     static QWOutputCursor *create(QWOutput *output);
 
+#if WLR_VERSION_MINOR <= 16
     bool setImage(const QImage &image, const QPoint &hotspot);
+#endif
     bool setBuffer(QWBuffer *buffer, const QPoint &hotspot);
     bool move(const QPointF &pos);
-
-private:
-    QWOutputCursor() = default;
-    ~QWOutputCursor() = default;
 };
 
 QW_END_NAMESPACE

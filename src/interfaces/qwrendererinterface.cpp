@@ -17,10 +17,12 @@
 #include <QRect>
 
 extern "C" {
+#include <math.h>
 // FIXME: float i[static 3] not working c++
 #define static
 #include <wlr/render/interface.h>
 #undef static
+#include <wlr/render/wlr_renderer.h>
 #include <libdrm/drm_fourcc.h>
 #include <wlr/render/drm_format_set.h>
 #include <wlr/util/box.h>
@@ -264,8 +266,12 @@ static wlr_texture *texture_from_buffer(wlr_renderer *handle, wlr_buffer *buffer
 }
 
 #if WLR_VERSION_MAJOR == 0 && WLR_VERSION_MINOR > 16
-static wlr_render_pass *begin_buffer_pass(wlr_renderer *handle, wlr_buffer *buffer) {
-    return interface(handle)->beginBufferPass(QWBuffer::from(buffer));
+static wlr_render_pass *begin_buffer_pass(wlr_renderer *handle, wlr_buffer *buffer, const wlr_buffer_pass_options *options) {
+    return interface(handle)->beginBufferPass(QWBuffer::from(buffer), options);
+}
+
+static wlr_render_timer *render_timer_create(wlr_renderer *handle) {
+    return interface(handle)->renderTimerCreate();
 }
 #endif
 } // namespace impl
@@ -326,7 +332,11 @@ QWTexture *QWRendererInterface::textureFromBuffer(QWBuffer *) const
 }
 
 #if WLR_VERSION_MAJOR == 0 && WLR_VERSION_MINOR > 16
-wlr_render_pass *QWRendererInterface::beginBufferPass(QWBuffer *buffer) {
+wlr_render_pass *QWRendererInterface::beginBufferPass(QWBuffer *, const wlr_buffer_pass_options *) {
+    return nullptr;
+}
+
+wlr_render_timer *QWRendererInterface::renderTimerCreate() {
     return nullptr;
 }
 #endif
@@ -352,6 +362,7 @@ void QWRendererInterface::init(FuncMagicKey funMagicKey)
         QW_INIT_INTERFACE_FUNC(funMagicKey, texture_from_buffer, &QWRendererInterface::textureFromBuffer),
 #if WLR_VERSION_MAJOR == 0 && WLR_VERSION_MINOR > 16
         QW_INIT_INTERFACE_FUNC(funMagicKey, begin_buffer_pass, &QWRendererInterface::beginBufferPass),
+        QW_INIT_INTERFACE_FUNC(funMagicKey, render_timer_create, &QWRendererInterface::renderTimerCreate),
 #endif
     };
     m_handleImpl = impl;

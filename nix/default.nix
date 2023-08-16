@@ -18,6 +18,7 @@
 , xorg
 , seatd
 }:
+
 stdenv.mkDerivation rec {
   pname = "qwlroots";
   version = "0.0.1";
@@ -43,7 +44,6 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     qtbase
-    wlroots
     wayland
     wayland-protocols
     wlr-protocols
@@ -56,11 +56,19 @@ stdenv.mkDerivation rec {
     seatd
   ];
 
+  propagatedBuildInputs = [
+    wlroots
+  ];
+
+  cmakeFlags = [
+    "-DPREFER_QT_5=${if lib.versionAtLeast qtbase.version "6" then "OFF" else "ON"}"
+  ];
+
   meta = with lib; {
     description = "Qt and QML bindings for wlroots";
     homepage = "https://github.com/vioken/qwlroots";
     license = licenses.gpl3Plus;
-    platforms = platforms.linux;
+    platforms = wlroots.meta.platforms;
   };
 }
 

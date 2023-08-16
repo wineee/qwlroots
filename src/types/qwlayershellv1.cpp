@@ -4,17 +4,20 @@
 #include "qwlayershellv1.h"
 #include "qwdisplay.h"
 #include "qwcompositor.h"
+#include "qwxdgshell.h"
 #include "util/qwsignalconnector.h"
 
 #include <QHash>
 #include <QPointF>
 
+extern "C" {
 // avoid replace namespace
 #include <math.h>
-extern "C" {
 #define namespace scope
+#define static
 #include <wlr/types/wlr_layer_shell_v1.h>
 #undef namespace
+#undef static
 }
 
 QW_BEGIN_NAMESPACE
@@ -114,8 +117,10 @@ public:
     {
         Q_ASSERT(!map.contains(handle));
         map.insert(handle, qq);
+#if WLR_VERSION_MINOR <= 16
         sc.connect(&handle->events.map, this, &QWLayerSurfaceV1Private::on_map);
         sc.connect(&handle->events.unmap, this, &QWLayerSurfaceV1Private::on_unmap);
+#endif
         sc.connect(&handle->events.new_popup, this, &QWLayerSurfaceV1Private::on_new_popup);
         sc.connect(&handle->events.destroy, this, &QWLayerSurfaceV1Private::on_destroy);
     }
@@ -135,8 +140,10 @@ public:
         sc.invalidate();
     }
 
+#if WLR_VERSION_MINOR <= 16
     void on_map(void *);
     void on_unmap(void *);
+#endif
     void on_new_popup(void *);
     void on_destroy(void *);
 
@@ -153,22 +160,22 @@ void QWLayerSurfaceV1Private::on_destroy(void *)
     delete q_func();
 }
 
-void QWLayerSurfaceV1Private::on_map(void *data)
+#if WLR_VERSION_MINOR <= 16
+void QWLayerSurfaceV1Private::on_map(void *)
 {
-    Q_ASSERT(m_handle == data);
-    Q_EMIT q_func()->map();
+    Q_EMIT q_func()->surface()->mapped();
 }
 
-void QWLayerSurfaceV1Private::on_unmap(void *data)
+void QWLayerSurfaceV1Private::on_unmap(void *)
 {
-    Q_ASSERT(m_handle == data);
-    Q_EMIT q_func()->unmap();
+    Q_EMIT q_func()->surface()->unmapped();
 }
+#endif
 
 void QWLayerSurfaceV1Private::on_new_popup(void *data)
 {
-    Q_ASSERT(m_handle == data);
-    Q_EMIT q_func()->newPopup();
+    auto *popup = QWXdgPopup::from(static_cast<wlr_xdg_popup*>(data));
+    Q_EMIT q_func()->newPopup(popup);
 }
 
 QWLayerSurfaceV1::QWLayerSurfaceV1(wlr_layer_surface_v1 *handle, bool isOwner)
@@ -246,6 +253,11 @@ QWSurface *QWLayerSurfaceV1::popupSurfaceAt(const QPointF &xpos, QPointF *subPos
     if (!surface)
         return nullptr;
     return QWSurface::from(surface);
+}
+
+QWSurface *QWLayerSurfaceV1::surface() const
+{
+    return QWSurface::from(handle()->surface);
 }
 
 QW_END_NAMESPACE

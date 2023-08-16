@@ -7,8 +7,6 @@
 #include <QObject>
 
 struct wlr_cursor;
-struct wlr_output_layout;
-struct wlr_output;
 struct wlr_pointer_motion_event;
 struct wlr_pointer_motion_absolute_event;
 struct wlr_pointer_button_event;
@@ -36,6 +34,9 @@ class QWSurface;
 class QWOutputLayout;
 class QWCursorPrivate;
 class QWInputDevice;
+class QWOutput;
+class QWBuffer;
+class QWXCursorManager;
 
 class QW_EXPORT QWCursor : public QObject, public QWObject
 {
@@ -43,6 +44,7 @@ class QW_EXPORT QWCursor : public QObject, public QWObject
     QW_DECLARE_PRIVATE(QWCursor)
 public:
     explicit QWCursor(QObject *parent = nullptr);
+    ~QWCursor() = default;
 
     inline wlr_cursor *handle() const {
         return QWObject::handle<wlr_cursor>();
@@ -55,14 +57,20 @@ public:
     void warpClosest(QWInputDevice *dev, const QPointF &pos);
     void warpAbsolute(QWInputDevice *dev, const QPointF &pos);
     void move(QWInputDevice *dev, const QPointF &deltaPos);
+#if WLR_VERSION_MINOR > 16
+    void setBuffer(QWBuffer *buffer, const QPoint &hotspot, float scale);
+    void setXCursor(QWXCursorManager *manager, const char *name);
+    void unsetImage();
+#else
     void setImage(const QImage &image, const QPoint &hotspot);
+#endif
     void setSurface(QWSurface *surface, const QPoint &hotspot);
 
     void attachInputDevice(QWInputDevice *dev);
     void detachInputDevice(QWInputDevice *dev);
     void attachOutputLayout(QWOutputLayout *layout);
-    void mapToOutput(wlr_output *output);
-    void mapInputToOutput(QWInputDevice *dev, wlr_output *output);
+    void mapToOutput(QWOutput *output);
+    void mapInputToOutput(QWInputDevice *dev, QWOutput *output);
     void mapToRegion(const QRect &box);
     void mapInputToRegion(QWInputDevice *dev, const QRect &box);
 
